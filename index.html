@@ -1,745 +1,294 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VidMark Studio</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
-        body { font-family: 'Cairo', sans-serif; background-color: #090d16; color: #f8fafc; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        #mediaContainer:fullscreen,
-        #mediaContainer:-webkit-full-screen {
-            background: #000; display: flex; align-items: center; justify-content: center;
-            width: 100vw; height: 100vh; border-radius: 0; border: none;
-        }
-        #mediaContainer:fullscreen #drawingCanvas,
-        #mediaContainer:-webkit-full-screen #drawingCanvas { width: 100%; height: 100%; }
-        .fs-toolbar {
-            position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 40;
-            background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(14px);
-            border: 1px solid rgba(51, 65, 85, 0.85); border-radius: 16px; padding: 8px 14px;
-            display: none; align-items: center; gap: 6px; box-shadow: 0 12px 40px rgba(0,0,0,0.55);
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        #mediaContainer:fullscreen .fs-toolbar,
-        #mediaContainer:-webkit-full-screen .fs-toolbar { display: flex; }
-        .fs-toolbar.hidden-fs { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(12px); }
-        body.is-fullscreen header,
-        body.is-fullscreen footer,
-        body.is-fullscreen .notes-sidebar,
-        body.is-fullscreen .tools-panel-normal,
-        body.is-fullscreen .controls-panel-normal { display: none !important; }
-        body.is-fullscreen main { padding: 0; max-width: none; grid-template-columns: 1fr; }
-        body.is-fullscreen #mediaContainer { border-radius: 0; aspect-ratio: auto; height: 100vh; }
-        .tool-btn.active { background: rgba(79, 70, 229, 0.25) !important; color: #a5b4fc !important; }
-        .speed-btn.active { background: rgba(79, 70, 229, 0.25) !important; color: #a5b4fc !important; }
-        .fs-tool-btn.active { background: rgba(79, 70, 229, 0.3) !important; color: #a5b4fc !important; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة المذاكرة والتأشير التفاعلي على الفيديو</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+body{font-family:'Cairo',sans-serif;background-color:#090d16;color:#f8fafc}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0f172a}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#475569}
+#mediaContainer:fullscreen,#mediaContainer:-webkit-full-screen{background:#000;display:flex;align-items:center;justify-content:center;width:100vw;height:100vh;border-radius:0;border:none}
+#mediaContainer:fullscreen #drawingCanvas,#mediaContainer:-webkit-full-screen #drawingCanvas{width:100%;height:100%}
+.fs-toolbar{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);z-index:40;background:rgba(15,23,42,.94);backdrop-filter:blur(14px);border:1px solid rgba(51,65,85,.85);border-radius:16px;padding:8px 14px;display:none;align-items:center;gap:6px;box-shadow:0 12px 40px rgba(0,0,0,.55);transition:opacity .3s,transform .3s}
+#mediaContainer:fullscreen .fs-toolbar,#mediaContainer:-webkit-full-screen .fs-toolbar{display:flex}
+.fs-toolbar.hidden-fs{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(12px)}
+body.is-fullscreen header,body.is-fullscreen footer,body.is-fullscreen .notes-sidebar,body.is-fullscreen .tools-panel-normal,body.is-fullscreen .controls-panel-normal{display:none!important}
+body.is-fullscreen main{padding:0;max-width:none;grid-template-columns:1fr}
+body.is-fullscreen #mediaContainer{border-radius:0;aspect-ratio:auto;height:100vh}
+.tool-btn.active,.speed-btn.active,.fs-tool-btn.active{background:rgba(79,70,229,.25)!important;color:#a5b4fc!important}
+</style>
 </head>
 <body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white justify-between">
-    <div class="flex-1 flex flex-col">
-        <!-- Header -->
-        <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-xl text-white shadow-lg shadow-indigo-500/20">
-                    <i data-lucide="pen-tool" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-tight text-white flex items-center gap-2">
-                        منصة المذاكرة والتأشير التفاعلي
-                        <span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">v2.1</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">شاهد الدروس، اشرح على الشاشة، ودوّن ملاحظاتك</p>
-                </div>
-            </div>
-            <div class="flex items-center flex-wrap gap-2">
-                <div class="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800 gap-1">
-                    <button id="exportSessionBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5" title="تصدير الجلسة">
-                        <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i><span>تصدير الجلسة</span>
-                    </button>
-                    <label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5" title="استيراد جلسة">
-                        <i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-sky-400"></i><span>استيراد جلسة</span>
-                        <input type="file" id="importSessionInput" accept=".json" class="hidden">
-                    </label>
-                </div>
-                <button id="ytModalBtn" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-xs px-3 py-2 rounded-xl transition flex items-center gap-2 font-medium">
-                    <i data-lucide="youtube" class="w-4 h-4"></i>
-                    <span class="hidden sm:inline">رابط YouTube</span>
-                </button>
-            </div>
-        </header>
-
-        <main class="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 max-w-[1920px] mx-auto w-full">
-            <div class="lg:col-span-3 flex flex-col gap-3">
-                <!-- Media Container -->
-                <div id="mediaContainer" class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border border-slate-800/80 aspect-video flex items-center justify-center group">
-                    <video id="videoPlayer" class="w-full h-full object-contain hidden">
-                        <source src="" type="video/mp4">متصفحك لا يدعم مشغل الفيديو.
-                    </video>
-                    <div id="ytPlayerContainer" class="absolute inset-0 w-full h-full hidden pointer-events-none">
-                        <div id="ytPlayer" class="w-full h-full"></div>
-                    </div>
-                    <canvas id="drawingCanvas" class="absolute inset-0 w-full h-full z-10 touch-none"></canvas>
-
-                    <!-- Floating Fullscreen Toolbar -->
-                    <div id="fsToolbar" class="fs-toolbar">
-                        <button class="fs-tool-btn p-2 rounded-lg text-indigo-400 bg-indigo-600/20" data-tool="pen" title="قلم"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                        <button class="fs-tool-btn p-2 rounded-lg text-slate-400 hover:text-white" data-tool="highlighter" title="قلم تمييز"><i data-lucide="highlighter" class="w-4 h-4"></i></button>
-                        <button class="fs-tool-btn p-2 rounded-lg text-slate-400 hover:text-white" data-tool="eraser" title="ممحاة"><i data-lucide="eraser" class="w-4 h-4"></i></button>
-                        <div class="w-px h-5 bg-slate-700 mx-1"></div>
-                        <button id="fsPlayBtn" class="p-2 rounded-lg bg-indigo-600 text-white" title="تشغيل / إيقاف (مسافة)"><i data-lucide="play" class="w-4 h-4"></i></button>
-                        <button id="fsUndoBtn" class="p-2 rounded-lg text-slate-300 hover:text-white" title="تراجع"><i data-lucide="undo-2" class="w-4 h-4"></i></button>
-                        <button id="fsClearBtn" class="p-2 rounded-lg text-slate-300 hover:text-red-400" title="مسح الكل"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        <div class="w-px h-5 bg-slate-700 mx-1"></div>
-                        <button id="exitFsBtn" class="p-2 rounded-lg text-slate-300 hover:text-white" title="خروج من ملء الشاشة (Esc)"><i data-lucide="minimize-2" class="w-4 h-4"></i></button>
-                    </div>
-
-                    <!-- Placeholder -->
-                    <div id="placeholderUI" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 z-20 p-6 text-center">
-                        <div class="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center mb-4 border border-indigo-500/20 shadow-inner">
-                            <i data-lucide="graduation-cap" class="w-8 h-8"></i>
-                        </div>
-                        <h2 class="text-xl font-bold mb-2">مرحباً بك في المنصة التفاعلية للمذاكرة</h2>
-                        <p class="text-slate-400 text-xs md:text-sm max-w-md mb-6 leading-relaxed">أدخل رابط يوتيوب للبدء بالتدوين والشرح مباشرة فوق الفيديو مع توثيق ملاحظاتك الزمانية.</p>
-                        <div class="flex flex-wrap gap-3 justify-center">
-                            <button onclick="openYtModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium text-xs md:text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30">
-                                <i data-lucide="youtube" class="w-4 h-4"></i>
-                                أدخل رابط YouTube
-                            </button>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mt-6 max-w-sm">اختصارات: مسافة = تشغيل/إيقاف · F = ملء الشاشة · أسهم = تقديم/تأخير · Ctrl+Z = تراجع · 1/2/3 = أدوات</p>
-                    </div>
-                </div>
-
-                <!-- Tools Panel (compact row) -->
-                <div class="tools-panel-normal bg-slate-900 border border-slate-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
-                    <div class="flex items-center flex-wrap gap-2">
-                        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
-                            <button id="toolPen" class="tool-btn active p-2 rounded-lg text-indigo-400 bg-indigo-600/20 transition" title="قلم (1)"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                            <button id="toolHighlighter" class="tool-btn p-2 rounded-lg text-slate-400 hover:text-white transition" title="تمييز (2)"><i data-lucide="highlighter" class="w-4 h-4"></i></button>
-                            <button id="toolEraser" class="tool-btn p-2 rounded-lg text-slate-400 hover:text-white transition" title="ممحاة (3)"><i data-lucide="eraser" class="w-4 h-4"></i></button>
-                        </div>
-                        <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
-                            <select id="lineStyleSelect" class="bg-transparent text-slate-300 focus:outline-none px-2 py-1 cursor-pointer">
-                                <option value="smooth" class="bg-slate-900">سلس</option>
-                                <option value="pen" class="bg-slate-900">حاد</option>
-                                <option value="dashed" class="bg-slate-900">متقطع</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-                            <input type="color" id="colorPicker" value="#ef4444" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0">
-                            <div class="flex items-center gap-1 border-r border-slate-800 pr-1.5">
-                                <button class="color-preset w-4 h-4 rounded-full bg-red-500 hover:scale-125 transition" data-color="#ef4444"></button>
-                                <button class="color-preset w-4 h-4 rounded-full bg-amber-400 hover:scale-125 transition" data-color="#fbbf24"></button>
-                                <button class="color-preset w-4 h-4 rounded-full bg-emerald-400 hover:scale-125 transition" data-color="#34d399"></button>
-                                <button class="color-preset w-4 h-4 rounded-full bg-sky-400 hover:scale-125 transition" data-color="#38bdf8"></button>
-                                <button class="color-preset w-4 h-4 rounded-full bg-white hover:scale-125 transition" data-color="#ffffff"></button>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
-                            <span class="text-slate-400">السمك:</span>
-                            <input type="range" id="lineWidth" min="1" max="40" value="4" class="w-16 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-                            <span id="strokeVal" class="text-slate-300 w-4 font-mono">4</span>
-                        </div>
-                        <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
-                            <span class="text-slate-400">الشفافية:</span>
-                            <input type="range" id="opacityInput" min="0.1" max="1" step="0.05" value="1" class="w-16 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
-                            <span id="opacityVal" class="text-slate-300 w-8 font-mono">100%</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <button id="undoBtn" class="p-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-slate-300 transition" title="تراجع (Ctrl+Z)"><i data-lucide="undo-2" class="w-4 h-4"></i></button>
-                        <button id="clearCanvasBtn" class="p-2 bg-slate-950 hover:bg-red-500/20 border border-slate-800 hover:border-red-500/30 text-slate-300 hover:text-red-400 rounded-xl transition" title="مسح الكل"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        <button id="fullscreenBtn" class="p-2 bg-slate-950 hover:bg-indigo-500/20 border border-slate-800 hover:border-indigo-500/30 text-slate-300 hover:text-indigo-400 rounded-xl transition" title="ملء الشاشة (F)"><i data-lucide="maximize" class="w-4 h-4"></i></button>
-                    </div>
-                </div>
-
-                <!-- Controls Panel -->
-                <div class="controls-panel-normal bg-slate-900 border border-slate-800/80 rounded-2xl p-3 flex flex-col gap-2 shadow-lg">
-                    <div class="flex items-center gap-3">
-                        <span id="currentTimeDisplay" class="text-xs font-mono text-slate-400 min-w-[42px] text-left cursor-pointer hover:text-indigo-400 transition select-none" title="انقر للتشغيل/الإيقاف">00:00</span>
-                        <input type="range" id="seekBar" min="0" value="0" step="0.1" class="flex-1 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer" title="اسحب للتقديم · نقرة مزدوجة = تشغيل/إيقاف">
-                        <span id="durationDisplay" class="text-xs font-mono text-slate-400 min-w-[42px]">00:00</span>
-                    </div>
-                    <div class="flex items-center justify-between flex-wrap gap-2 pt-1">
-                        <div class="flex items-center gap-2">
-                            <button id="playPauseBtn" class="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition flex items-center justify-center shadow-md shadow-indigo-600/30" title="تشغيل/إيقاف (مسافة)"><i data-lucide="play" class="w-4 h-4"></i></button>
-                            <button id="skipBackwardBtn" class="p-2 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-800 transition" title="-5 ثواني (←)"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
-                            <button id="skipForwardBtn" class="p-2 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-800 transition" title="+5 ثواني (→)"><i data-lucide="rotate-cw" class="w-4 h-4"></i></button>
-                            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 hover:bg-slate-800/50 transition">
-                                <input type="checkbox" id="autoPauseToggle" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500/20 bg-slate-900 w-3.5 h-3.5">
-                                <span>إيقاف تلقائي عند الرسم</span>
-                            </label>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="flex items-center gap-1.5 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
-                                <button id="muteBtn" class="text-slate-400 hover:text-white p-0.5" title="كتم"><i data-lucide="volume-2" class="w-3.5 h-3.5"></i></button>
-                                <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" class="w-14 accent-indigo-500 h-1 bg-slate-800 rounded-lg cursor-pointer">
-                            </div>
-                            <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                                <span class="text-[11px] text-slate-400 px-1.5">السرعة:</span>
-                                <button class="speed-btn text-xs px-2 py-1 rounded-lg text-slate-300 hover:bg-slate-800" data-speed="0.75">0.75x</button>
-                                <button class="speed-btn active text-xs px-2 py-1 rounded-lg text-indigo-400 bg-indigo-600/20" data-speed="1">1x</button>
-                                <button class="speed-btn text-xs px-2 py-1 rounded-lg text-slate-300 hover:bg-slate-800" data-speed="1.25">1.25x</button>
-                                <button class="speed-btn text-xs px-2 py-1 rounded-lg text-slate-300 hover:bg-slate-800" data-speed="1.5">1.5x</button>
-                                <button class="speed-btn text-xs px-2 py-1 rounded-lg text-slate-300 hover:bg-slate-800" data-speed="2">2x</button>
-                            </div>
-                            <button id="screenshotBtn" class="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5">
-                                <i data-lucide="camera" class="w-3.5 h-3.5 text-indigo-400"></i><span>لقطة شاشة</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notes Sidebar -->
-            <div class="notes-sidebar lg:col-span-1 bg-slate-900 border border-slate-800/80 rounded-2xl p-4 flex flex-col h-[580px] lg:h-auto shadow-lg">
-                <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="notebook" class="w-4 h-4 text-indigo-400"></i>
-                        <h3 class="font-bold text-sm">ملاحظات الدرس</h3>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span id="noteCount" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-mono">0</span>
-                        <button id="clearNotesBtn" class="text-slate-500 hover:text-red-400 p-1 rounded transition" title="حذف كل الملاحظات"><i data-lucide="trash" class="w-3.5 h-3.5"></i></button>
-                    </div>
-                </div>
-                <div class="flex flex-col gap-2 mb-4">
-                    <textarea id="noteInput" rows="3" placeholder="اكتب ملاحظة أو تفاصيل الشرح هنا..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500/80 transition resize-none"></textarea>
-                    <button id="addNoteBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20">
-                        <i data-lucide="plus" class="w-4 h-4"></i><span>إضافة ملاحظة عند التوقيت الحالي</span>
-                    </button>
-                </div>
-                <div id="notesList" class="flex-1 overflow-y-auto space-y-2 pr-1">
-                    <div id="emptyNotes" class="h-full flex flex-col items-center justify-center text-slate-500 text-center py-8">
-                        <i data-lucide="bookmark-plus" class="w-10 h-10 mb-2 stroke-1 text-slate-600"></i>
-                        <p class="text-xs">لا توجد ملاحظات محفوظة في هذا الدرس.</p>
-                        <p class="text-[11px] text-slate-600 mt-1">الملاحظات ستساعدك في الوصول السريع للتوقيتات المهمة.</p>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- YouTube Modal -->
-    <div id="ytModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="youtube" class="w-5 h-5 text-red-500"></i>تشغيل فيديو من YouTube</h3>
-                <button onclick="closeYtModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-            <p class="text-xs text-slate-400 mb-4 leading-relaxed">أدخل رابط فيديو اليوتيوب الذي تريد مشاهدته والمذاكرة منه:</p>
-            <input type="text" id="ytUrlInput" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 mb-4 focus:outline-none focus:border-indigo-500">
-            <div class="flex justify-end gap-2">
-                <button onclick="closeYtModal()" class="px-4 py-2 rounded-xl text-xs bg-slate-800 text-slate-300 hover:bg-slate-700">إلغاء</button>
-                <button id="loadYtBtn" class="px-4 py-2 rounded-xl text-xs bg-indigo-600 text-white hover:bg-indigo-500">تحميل الفيديو</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast -->
-    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 text-slate-100 text-xs px-4 py-2.5 rounded-xl shadow-xl z-[100] opacity-0 pointer-events-none transition-opacity duration-300 flex items-center gap-2">
-        <i data-lucide="info" class="w-4 h-4 text-indigo-400"></i><span id="toastMsg">رسالة</span>
-    </div>
-
-    <footer class="border-t border-slate-800/80 bg-slate-900/60 py-4 px-6 text-center text-xs text-slate-400 mt-auto">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-                <i data-lucide="code-2" class="w-4 h-4 text-indigo-400"></i>
-                <span>تم تطويره وتصميمه من قبل <strong class="text-slate-200">Abdelrahman Ashraf</strong> - طالب بكلية الهندسة جامعة عين شمس</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <i data-lucide="mail" class="w-4 h-4 text-indigo-400"></i><span>تواصل: </span>
-                <a href="mailto:abdelrahman.ashraf.resume@gmail.com" class="text-indigo-400 hover:text-indigo-300 hover:underline transition font-mono">abdelrahman.ashraf.resume@gmail.com</a>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <script>
-        const video = document.getElementById('videoPlayer');
-        const ytPlayerContainer = document.getElementById('ytPlayerContainer');
-        const canvas = document.getElementById('drawingCanvas');
-        const ctx = canvas.getContext('2d');
-        const placeholderUI = document.getElementById('placeholderUI');
-        const mediaContainer = document.getElementById('mediaContainer');
-        const fsToolbar = document.getElementById('fsToolbar');
-
-        let ytPlayer = null, isYouTube = false, youtubeVideoUrl = '', isFullscreen = false, fsToolbarTimeout = null;
-        let currentTool = 'pen', linePattern = 'smooth', drawingColor = '#ef4444', strokeWidth = 4, globalOpacity = 1;
-        let isDrawing = false, drawingHistory = [], notes = [], isSeeking = false;
-
-        const playPauseBtn = document.getElementById('playPauseBtn');
-        const seekBar = document.getElementById('seekBar');
-        const currentTimeDisplay = document.getElementById('currentTimeDisplay');
-        const durationDisplay = document.getElementById('durationDisplay');
-        const autoPauseToggle = document.getElementById('autoPauseToggle');
-        const colorPicker = document.getElementById('colorPicker');
-        const lineWidthInput = document.getElementById('lineWidth');
-        const strokeVal = document.getElementById('strokeVal');
-        const opacityInput = document.getElementById('opacityInput');
-        const opacityVal = document.getElementById('opacityVal');
-        const lineStyleSelect = document.getElementById('lineStyleSelect');
-        const volumeSlider = document.getElementById('volumeSlider');
-        const muteBtn = document.getElementById('muteBtn');
-
-        lucide.createIcons();
-
-        function showToast(msg, duration = 2200) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastMsg').textContent = msg;
-            toast.style.opacity = '1';
-            clearTimeout(toast._t);
-            toast._t = setTimeout(() => { toast.style.opacity = '0'; }, duration);
-            lucide.createIcons();
-        }
-
-        function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            if (rect.width && rect.height) {
-                let imgData = null;
-                if (canvas.width > 0 && canvas.height > 0) {
-                    try { imgData = ctx.getImageData(0, 0, canvas.width, canvas.height); } catch(e){}
-                }
-                canvas.width = rect.width; canvas.height = rect.height;
-                if (imgData) { try { ctx.putImageData(imgData, 0, 0); } catch(e){} }
-            }
-        }
-        window.addEventListener('resize', resizeCanvas);
-        setTimeout(resizeCanvas, 150);
-
-        let lastX = 0, lastY = 0;
-        function startDrawing(e) {
-            if (autoPauseToggle.checked) pauseVideo();
-            isDrawing = true;
-            const pos = getPos(e); lastX = pos.x; lastY = pos.y;
-            saveState(); ctx.beginPath(); ctx.moveTo(lastX, lastY);
-        }
-        function draw(e) {
-            if (!isDrawing) return;
-            const pos = getPos(e);
-            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-            if (currentTool === 'eraser') {
-                ctx.globalCompositeOperation = 'destination-out';
-                ctx.lineWidth = strokeWidth * 3; ctx.setLineDash([]);
-            } else {
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.globalAlpha = (currentTool === 'highlighter') ? 0.35 : globalOpacity;
-                ctx.strokeStyle = drawingColor;
-                ctx.lineWidth = (currentTool === 'highlighter') ? strokeWidth * 3.5 : strokeWidth;
-                ctx.setLineDash(linePattern === 'dashed' ? [strokeWidth*2, strokeWidth*2] : []);
-            }
-            if (linePattern === 'smooth' && currentTool !== 'eraser') {
-                const midX = (lastX + pos.x)/2, midY = (lastY + pos.y)/2;
-                ctx.quadraticCurveTo(lastX, lastY, midX, midY);
-            } else { ctx.lineTo(pos.x, pos.y); }
-            ctx.stroke(); lastX = pos.x; lastY = pos.y;
-        }
-        function stopDrawing() {
-            if (isDrawing) { ctx.closePath(); ctx.globalAlpha = 1; isDrawing = false; }
-        }
-        function getPos(e) {
-            const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: clientX - rect.left, y: clientY - rect.top };
-        }
-        function saveState() {
-            if (drawingHistory.length > 25) drawingHistory.shift();
-            try { drawingHistory.push(ctx.getImageData(0,0,canvas.width,canvas.height)); } catch(e){}
-        }
-        function undo() {
-            if (drawingHistory.length > 0) ctx.putImageData(drawingHistory.pop(), 0, 0);
-            else clearCanvas();
-        }
-        function clearCanvas() { ctx.clearRect(0,0,canvas.width,canvas.height); drawingHistory = []; }
-
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseleave', stopDrawing);
-        canvas.addEventListener('touchstart', e => { e.preventDefault(); startDrawing(e); }, {passive:false});
-        canvas.addEventListener('touchmove', e => { e.preventDefault(); draw(e); }, {passive:false});
-        canvas.addEventListener('touchend', stopDrawing);
-
-        document.getElementById('toolPen').addEventListener('click', function(){ setTool('pen', this); });
-        document.getElementById('toolHighlighter').addEventListener('click', function(){ setTool('highlighter', this); });
-        document.getElementById('toolEraser').addEventListener('click', function(){ setTool('eraser', this); });
-        document.querySelectorAll('.fs-tool-btn').forEach(btn => {
-            btn.addEventListener('click', () => setTool(btn.dataset.tool, btn));
-        });
-
-        function setTool(tool, element) {
-            currentTool = tool;
-            document.querySelectorAll('.tool-btn').forEach(b => {
-                b.classList.remove('bg-indigo-600/20','text-indigo-400','active');
-                b.classList.add('text-slate-400');
-            });
-            document.querySelectorAll('.fs-tool-btn').forEach(b => {
-                b.classList.remove('bg-indigo-600/20','text-indigo-400','active');
-                b.classList.add('text-slate-400');
-            });
-            const idMap = {pen:'toolPen', highlighter:'toolHighlighter', eraser:'toolEraser'};
-            const normal = document.getElementById(idMap[tool]);
-            if (normal) { normal.classList.add('bg-indigo-600/20','text-indigo-400','active'); normal.classList.remove('text-slate-400'); }
-            document.querySelectorAll(`[data-tool="${tool}"]`).forEach(b => {
-                b.classList.add('bg-indigo-600/20','text-indigo-400','active'); b.classList.remove('text-slate-400');
-            });
-        }
-
-        lineStyleSelect.addEventListener('change', e => linePattern = e.target.value);
-        colorPicker.addEventListener('input', e => drawingColor = e.target.value);
-        document.querySelectorAll('.color-preset').forEach(btn => {
-            btn.addEventListener('click', () => { drawingColor = btn.dataset.color; colorPicker.value = drawingColor; });
-        });
-        lineWidthInput.addEventListener('input', e => { strokeWidth = parseInt(e.target.value); strokeVal.textContent = strokeWidth; });
-        opacityInput.addEventListener('input', e => { globalOpacity = parseFloat(e.target.value); opacityVal.textContent = Math.round(globalOpacity*100)+'%'; });
-        document.getElementById('undoBtn').addEventListener('click', undo);
-        document.getElementById('clearCanvasBtn').addEventListener('click', clearCanvas);
-        document.getElementById('fsUndoBtn').addEventListener('click', undo);
-        document.getElementById('fsClearBtn').addEventListener('click', clearCanvas);
-
-        // Fullscreen
-        function toggleFullscreen() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                const el = mediaContainer;
-                if (el.requestFullscreen) el.requestFullscreen();
-                else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-            }
-        }
-        document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
-        document.getElementById('exitFsBtn').addEventListener('click', toggleFullscreen);
-
-        function onFullscreenChange() {
-            isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
-            document.body.classList.toggle('is-fullscreen', isFullscreen);
-            setTimeout(resizeCanvas, 120);
-            if (isFullscreen) { showFsToolbarTemporarily(); showToast('اضغط Esc للخروج من ملء الشاشة'); }
-            lucide.createIcons();
-        }
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
-        function showFsToolbarTemporarily() {
-            if (!isFullscreen) return;
-            fsToolbar.classList.remove('hidden-fs');
-            clearTimeout(fsToolbarTimeout);
-            fsToolbarTimeout = setTimeout(() => {
-                if (isFullscreen && !isDrawing) fsToolbar.classList.add('hidden-fs');
-            }, 3500);
-        }
-        mediaContainer.addEventListener('mousemove', showFsToolbarTemporarily);
-        mediaContainer.addEventListener('touchstart', showFsToolbarTemporarily);
-
-        // Video controls
-        function togglePlay() {
-            if (isYouTube && ytPlayer) {
-                const state = ytPlayer.getPlayerState();
-                if (state === YT.PlayerState.PLAYING) ytPlayer.pauseVideo();
-                else ytPlayer.playVideo();
-            } else if (video.src) {
-                if (video.paused) video.play(); else video.pause();
-            }
-        }
-        function pauseVideo() {
-            if (isYouTube && ytPlayer) ytPlayer.pauseVideo();
-            else if (video.src) video.pause();
-        }
-        function isPlaying() {
-            if (isYouTube && ytPlayer) return ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
-            return video.src && !video.paused;
-        }
-        playPauseBtn.addEventListener('click', togglePlay);
-        document.getElementById('fsPlayBtn').addEventListener('click', togglePlay);
-        currentTimeDisplay.addEventListener('click', togglePlay);
-
-        video.addEventListener('play', () => updatePlayBtn(true));
-        video.addEventListener('pause', () => updatePlayBtn(false));
-        function updatePlayBtn(playing) {
-            const icon = playing ? 'pause' : 'play';
-            playPauseBtn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
-            const fsBtn = document.getElementById('fsPlayBtn');
-            if (fsBtn) fsBtn.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
-            lucide.createIcons();
-        }
-
-        video.addEventListener('timeupdate', () => {
-            if (!isYouTube && !isSeeking) {
-                const current = video.currentTime, duration = video.duration || 0;
-                seekBar.value = current; seekBar.max = duration;
-                currentTimeDisplay.textContent = formatTime(current);
-                durationDisplay.textContent = formatTime(duration);
-            }
-        });
-        seekBar.addEventListener('mousedown', () => { isSeeking = true; });
-        seekBar.addEventListener('touchstart', () => { isSeeking = true; });
-        seekBar.addEventListener('mouseup', () => { isSeeking = false; });
-        seekBar.addEventListener('touchend', () => { isSeeking = false; });
-        seekBar.addEventListener('input', () => {
-            const time = parseFloat(seekBar.value);
-            if (isYouTube && ytPlayer) ytPlayer.seekTo(time, true);
-            else video.currentTime = time;
-            currentTimeDisplay.textContent = formatTime(time);
-        });
-        seekBar.addEventListener('dblclick', e => { e.preventDefault(); togglePlay(); });
-
-        document.getElementById('skipForwardBtn').addEventListener('click', () => {
-            if (isYouTube && ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+5, true);
-            else video.currentTime += 5;
-        });
-        document.getElementById('skipBackwardBtn').addEventListener('click', () => {
-            if (isYouTube && ytPlayer) ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime()-5), true);
-            else video.currentTime = Math.max(0, video.currentTime-5);
-        });
-
-        document.querySelectorAll('.speed-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.speed-btn').forEach(b => {
-                    b.classList.remove('bg-indigo-600/20','text-indigo-400','active');
-                    b.classList.add('text-slate-300');
-                });
-                btn.classList.add('bg-indigo-600/20','text-indigo-400','active');
-                btn.classList.remove('text-slate-300');
-                const speed = parseFloat(btn.dataset.speed);
-                if (isYouTube && ytPlayer) ytPlayer.setPlaybackRate(speed);
-                else video.playbackRate = speed;
-            });
-        });
-
-        volumeSlider.addEventListener('input', () => {
-            const vol = parseFloat(volumeSlider.value);
-            video.volume = vol;
-            if (isYouTube && ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(vol*100);
-            updateMuteIcon(vol === 0);
-        });
-        muteBtn.addEventListener('click', () => {
-            if (video.volume > 0 || (ytPlayer && ytPlayer.getVolume && ytPlayer.getVolume() > 0)) {
-                volumeSlider.dataset.prev = volumeSlider.value;
-                volumeSlider.value = 0; video.volume = 0;
-                if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(0);
-                updateMuteIcon(true);
-            } else {
-                const prev = parseFloat(volumeSlider.dataset.prev || '1');
-                volumeSlider.value = prev; video.volume = prev;
-                if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(prev*100);
-                updateMuteIcon(false);
-            }
-        });
-        function updateMuteIcon(muted) {
-            muteBtn.innerHTML = muted ? '<i data-lucide="volume-x" class="w-3.5 h-3.5"></i>' : '<i data-lucide="volume-2" class="w-3.5 h-3.5"></i>';
-            lucide.createIcons();
-        }
-
-        // YouTube only
-        function openYtModal() { document.getElementById('ytModal').classList.remove('hidden'); }
-        function closeYtModal() { document.getElementById('ytModal').classList.add('hidden'); }
-        document.getElementById('ytModalBtn').addEventListener('click', openYtModal);
-        document.getElementById('loadYtBtn').addEventListener('click', () => {
-            const input = document.getElementById('ytUrlInput').value.trim();
-            const videoId = extractYtId(input);
-            if (videoId) { youtubeVideoUrl = input; loadYouTubeVideo(videoId); closeYtModal(); }
-            else showToast('يرجى التأكد من إدخال رابط يوتيوب صحيح');
-        });
-        document.getElementById('ytUrlInput').addEventListener('keydown', e => {
-            if (e.key === 'Enter') document.getElementById('loadYtBtn').click();
-        });
-
-        function extractYtId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
-        }
-        function loadYouTubeVideo(id) {
-            isYouTube = true;
-            video.classList.add('hidden');
-            ytPlayerContainer.classList.remove('hidden');
-            placeholderUI.classList.add('hidden');
-            if (ytPlayer) ytPlayer.loadVideoById(id);
-            else {
-                ytPlayer = new YT.Player('ytPlayer', {
-                    videoId: id,
-                    playerVars: { autoplay:1, controls:0, modestbranding:1, rel:0 },
-                    events: { onReady: onYtReady, onStateChange: onYtStateChange }
-                });
-            }
-            showToast('تم تحميل فيديو YouTube');
-        }
-        function onYtReady() {
-            setInterval(() => {
-                if (isYouTube && ytPlayer && ytPlayer.getCurrentTime && !isSeeking) {
-                    try {
-                        const current = ytPlayer.getCurrentTime(), duration = ytPlayer.getDuration() || 0;
-                        seekBar.value = current; seekBar.max = duration;
-                        currentTimeDisplay.textContent = formatTime(current);
-                        durationDisplay.textContent = formatTime(duration);
-                    } catch(e){}
-                }
-            }, 400);
-            resizeCanvas();
-            if (ytPlayer.setVolume) ytPlayer.setVolume(parseFloat(volumeSlider.value)*100);
-        }
-        function onYtStateChange(event) {
-            if (event.data === YT.PlayerState.PLAYING) updatePlayBtn(true);
-            else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) updatePlayBtn(false);
-        }
-
-        // Notes
-        const noteInput = document.getElementById('noteInput');
-        const notesList = document.getElementById('notesList');
-        const emptyNotes = document.getElementById('emptyNotes');
-
-        document.getElementById('addNoteBtn').addEventListener('click', () => {
-            const text = noteInput.value.trim();
-            if (!text) { showToast('اكتب الملاحظة أولاً'); return; }
-            let time = 0;
-            if (isYouTube && ytPlayer) time = ytPlayer.getCurrentTime();
-            else time = video.currentTime || 0;
-            notes.push({ id: Date.now(), time, formattedTime: formatTime(time), text });
-            notes.sort((a,b) => a.time - b.time);
-            noteInput.value = ''; renderNotes(); showToast('تمت إضافة الملاحظة');
-        });
-        noteInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); document.getElementById('addNoteBtn').click(); }
-        });
-        document.getElementById('clearNotesBtn').addEventListener('click', () => {
-            if (notes.length === 0) return;
-            if (confirm('هل تريد حذف جميع الملاحظات؟')) { notes = []; renderNotes(); showToast('تم حذف جميع الملاحظات'); }
-        });
-
-        function renderNotes() {
-            document.getElementById('noteCount').textContent = notes.length;
-            if (notes.length === 0) {
-                emptyNotes.classList.remove('hidden');
-                notesList.querySelectorAll('.note-item').forEach(el => el.remove());
-                return;
-            }
-            emptyNotes.classList.add('hidden');
-            notesList.querySelectorAll('.note-item').forEach(el => el.remove());
-            notes.forEach(note => {
-                const item = document.createElement('div');
-                item.className = 'note-item bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-1 hover:border-indigo-500/40 transition group';
-                item.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <button onclick="jumpToTime(${note.time})" class="text-xs font-mono bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-md hover:bg-indigo-600 hover:text-white transition flex items-center gap-1">
-                            <i data-lucide="play-circle" class="w-3 h-3"></i>${note.formattedTime}
-                        </button>
-                        <button onclick="deleteNote(${note.id})" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
-                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>
-                    <p class="text-xs text-slate-200 mt-1 leading-relaxed">${escapeHtml(note.text)}</p>`;
-                notesList.appendChild(item);
-            });
-            lucide.createIcons();
-        }
-        function jumpToTime(time) {
-            if (isYouTube && ytPlayer) ytPlayer.seekTo(time, true);
-            else video.currentTime = time;
-            if (!isPlaying()) togglePlay();
-        }
-        function deleteNote(id) { notes = notes.filter(n => n.id !== id); renderNotes(); }
-
-        // Export / Import
-        document.getElementById('exportSessionBtn').addEventListener('click', () => {
-            const sessionData = {
-                version: '2.1', author: 'Abdelrahman Ashraf', timestamp: new Date().toISOString(),
-                isYouTube, youtubeUrl: youtubeVideoUrl, notes, canvasData: canvas.toDataURL('image/png')
-            };
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sessionData, null, 2));
-            const a = document.createElement('a');
-            a.setAttribute('href', dataStr);
-            a.setAttribute('download', `study-session-${Date.now()}.json`);
-            document.body.appendChild(a); a.click(); a.remove();
-            showToast('تم تصدير الجلسة');
-        });
-        document.getElementById('importSessionInput').addEventListener('change', e => {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const session = JSON.parse(evt.target.result);
-                    if (session.notes) { notes = session.notes; notes.sort((a,b)=>a.time-b.time); renderNotes(); }
-                    if (session.isYouTube && session.youtubeUrl) {
-                        const videoId = extractYtId(session.youtubeUrl);
-                        if (videoId) { youtubeVideoUrl = session.youtubeUrl; loadYouTubeVideo(videoId); }
-                    }
-                    if (session.canvasData) {
-                        const img = new Image();
-                        img.onload = function() { clearCanvas(); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
-                        img.src = session.canvasData;
-                    }
-                    showToast('تمت استعادة الجلسة بنجاح');
-                } catch(err) { showToast('خطأ أثناء قراءة ملف الجلسة'); }
-            };
-            reader.readAsText(file); e.target.value = '';
-        });
-
-        // Screenshot
-        document.getElementById('screenshotBtn').addEventListener('click', () => {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width; tempCanvas.height = canvas.height;
-            const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.fillStyle = '#0f172a';
-            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-            tempCtx.fillStyle = '#64748b';
-            tempCtx.font = '14px Cairo, sans-serif';
-            tempCtx.textAlign = 'center';
-            tempCtx.fillText('لقطة من الرسم (يوتيوب محمي)', tempCanvas.width/2, tempCanvas.height/2);
-            tempCtx.drawImage(canvas, 0, 0);
-            const link = document.createElement('a');
-            link.download = `study-screenshot-${Date.now()}.png`;
-            link.href = tempCanvas.toDataURL('image/png');
-            link.click(); showToast('تم حفظ لقطة الشاشة');
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', e => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-            switch(e.key) {
-                case ' ': e.preventDefault(); togglePlay(); break;
-                case 'f': case 'F': e.preventDefault(); toggleFullscreen(); break;
-                case 'ArrowRight':
-                    e.preventDefault();
-                    if (isYouTube && ytPlayer) ytPlayer.seekTo(ytPlayer.getCurrentTime()+5, true);
-                    else video.currentTime += 5;
-                    break;
-                case 'ArrowLeft':
-                    e.preventDefault();
-                    if (isYouTube && ytPlayer) ytPlayer.seekTo(Math.max(0, ytPlayer.getCurrentTime()-5), true);
-                    else video.currentTime = Math.max(0, video.currentTime-5);
-                    break;
-                case 'z': case 'Z':
-                    if (e.ctrlKey || e.metaKey) { e.preventDefault(); undo(); }
-                    break;
-                case 'Escape': if (isFullscreen) toggleFullscreen(); break;
-                case '1': setTool('pen', document.getElementById('toolPen')); break;
-                case '2': setTool('highlighter', document.getElementById('toolHighlighter')); break;
-                case '3': setTool('eraser', document.getElementById('toolEraser')); break;
-            }
-        });
-
-        function formatTime(seconds) {
-            if (isNaN(seconds) || !isFinite(seconds)) return '00:00';
-            const mins = Math.floor(seconds/60), secs = Math.floor(seconds%60);
-            return `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
-        }
-        function escapeHtml(text) {
-            return text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-        }
-
-        window.jumpToTime = jumpToTime;
-        window.deleteNote = deleteNote;
-        window.openYtModal = openYtModal;
-        window.closeYtModal = closeYtModal;
-    </script>
+<div class="flex-1 flex flex-col">
+<header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-xl text-white shadow-lg shadow-indigo-500/20"><i data-lucide="pen-tool" class="w-6 h-6"></i></div>
+<div>
+<h1 class="font-bold text-lg leading-tight text-white flex items-center gap-2">منصة المذاكرة والتأشير التفاعلي<span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-mono">v2.1</span></h1>
+<p class="text-xs text-slate-400">شاهد الدروس، اشرح على الشاشة، ودوّن ملاحظاتك</p>
+</div>
+</div>
+<div class="flex items-center flex-wrap gap-2">
+<div class="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800 gap-1">
+<button id="exportSessionBtn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5" title="تصدير الجلسة"><i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i><span>تصدير الجلسة</span></button>
+<label class="cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5" title="استيراد جلسة"><i data-lucide="upload-cloud" class="w-3.5 h-3.5 text-sky-400"></i><span>استيراد جلسة</span><input type="file" id="importSessionInput" accept=".json" class="hidden"></label>
+</div>
+<button id="ytModalBtn" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-xs px-3 py-2 rounded-xl transition flex items-center gap-2 font-medium"><i data-lucide="youtube" class="w-4 h-4"></i><span class="hidden sm:inline">رابط YouTube</span></button>
+</div>
+</header>
+<main class="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 p-4 max-w-[1920px] mx-auto w-full">
+<div class="lg:col-span-3 flex flex-col gap-3">
+<div id="mediaContainer" class="relative w-full bg-slate-950 rounded-2xl overflow-hidden shadow-2xl border border-slate-800/80 aspect-video flex items-center justify-center group">
+<video id="videoPlayer" class="w-full h-full object-contain hidden"><source src="" type="video/mp4">متصفحك لا يدعم مشغل الفيديو.</video>
+<div id="ytPlayerContainer" class="absolute inset-0 w-full h-full hidden pointer-events-none"><div id="ytPlayer" class="w-full h-full"></div></div>
+<canvas id="drawingCanvas" class="absolute inset-0 w-full h-full z-10 touch-none"></canvas>
+<div id="fsToolbar" class="fs-toolbar">
+<button class="fs-tool-btn p-2 rounded-lg text-indigo-400 bg-indigo-600/20" data-tool="pen" title="قلم"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+<button class="fs-tool-btn p-2 rounded-lg text-slate-400 hover:text-white" data-tool="highlighter" title="قلم تمييز"><i data-lucide="highlighter" class="w-4 h-4"></i></button>
+<button class="fs-tool-btn p-2 rounded-lg text-slate-400 hover:text-white" data-tool="eraser" title="ممحاة"><i data-lucide="eraser" class="w-4 h-4"></i></button>
+<div class="w-px h-5 bg-slate-700 mx-1"></div>
+<button id="fsPlayBtn" class="p-2 rounded-lg bg-indigo-600 text-white" title="تشغيل / إيقاف"><i data-lucide="play" class="w-4 h-4"></i></button>
+<button id="fsUndoBtn" class="p-2 rounded-lg text-slate-300 hover:text-white" title="تراجع"><i data-lucide="undo-2" class="w-4 h-4"></i></button>
+<button id="fsClearBtn" class="p-2 rounded-lg text-slate-300 hover:text-red-400" title="مسح الكل"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+<div class="w-px h-5 bg-slate-700 mx-1"></div>
+<button id="exitFsBtn" class="p-2 rounded-lg text-slate-300 hover:text-white" title="خروج من ملء الشاشة"><i data-lucide="minimize-2" class="w-4 h-4"></i></button>
+</div>
+<div id="placeholderUI" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/95 z-20 p-6 text-center">
+<div class="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center mb-4 border border-indigo-500/20 shadow-inner"><i data-lucide="graduation-cap" class="w-8 h-8"></i></div>
+<h2 class="text-xl font-bold mb-2">مرحباً بك في المنصة التفاعلية للمذاكرة</h2>
+<p class="text-slate-400 text-xs md:text-sm max-w-md mb-6 leading-relaxed">أدخل رابط يوتيوب للبدء بالتدوين والشرح مباشرة فوق الفيديو مع توثيق ملاحظاتك الزمانية.</p>
+<div class="flex flex-wrap gap-3 justify-center">
+<button onclick="openYtModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium text-xs md:text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30"><i data-lucide="youtube" class="w-4 h-4"></i>أدخل رابط YouTube</button>
+</div>
+<p class="text-[11px] text-slate-500 mt-6 max-w-sm">اختصارات: مسافة = تشغيل/إيقاف · F = ملء الشاشة · أسهم = تقديم/تأخير · Ctrl+Z = تراجع · 1/2/3 = أدوات</p>
+</div>
+</div>
+<div class="tools-panel-normal bg-slate-900 border border-slate-800/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+<div class="flex items-center flex-wrap gap-2">
+<div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+<button id="toolPen" class="tool-btn active p-2 rounded-lg text-indigo-400 bg-indigo-600/20 transition" title="قلم (1)"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+<button id="toolHighlighter" class="tool-btn p-2 rounded-lg text-slate-400 hover:text-white transition" title="تمييز (2)"><i data-lucide="highlighter" class="w-4 h-4"></i></button>
+<button id="toolEraser" class="tool-btn p-2 rounded-lg text-slate-400 hover:text-white transition" title="ممحاة (3)"><i data-lucide="eraser" class="w-4 h-4"></i></button>
+</div>
+<div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+<select id="lineStyleSelect" class="bg-transparent text-slate-300 focus:outline-none px-2 py-1 cursor-pointer">
+<option value="smooth" class="bg-slate-900">سلس</option>
+<option value="pen" class="bg-slate-900">حاد</option>
+<option value="dashed" class="bg-slate-900">متقطع</option>
+</select>
+</div>
+<div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
+<input type="color" id="colorPicker" value="#ef4444" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0 p-0">
+<div class="flex items-center gap-1 border-r border-slate-800 pr-1.5">
+<button class="color-preset w-4 h-4 rounded-full bg-red-500 hover:scale-125 transition" data-color="#ef4444"></button>
+<button class="color-preset w-4 h-4 rounded-full bg-amber-400 hover:scale-125 transition" data-color="#fbbf24"></button>
+<button class="color-preset w-4 h-4 rounded-full bg-emerald-400 hover:scale-125 transition" data-color="#34d399"></button>
+<button class="color-preset w-4 h-4 rounded-full bg-sky-400 hover:scale-125 transition" data-color="#38bdf8"></button>
+<button class="color-preset w-4 h-4 rounded-full bg-white hover:scale-125 transition" data-color="#ffffff"></button>
+</div>
+</div>
+<div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+<span class="text-slate-400">السمك:</span>
+<input type="range" id="lineWidth" min="1" max="40" value="4" class="w-16 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+<span id="strokeVal" class="text-slate-300 w-4 font-mono">4</span>
+</div>
+<div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+<span class="text-slate-400">الشفافية:</span>
+<input type="range" id="opacityInput" min="0.1" max="1" step="0.05" value="1" class="w-16 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+<span id="opacityVal" class="text-slate-300 w-8 font-mono">100%</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<button id="undoBtn" class="p-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl text-slate-300 transition" title="تراجع (Ctrl+Z)"><i data-lucide="undo-2" class="w-4 h-4"></i></button>
+<button id="clearCanvasBtn" class="p-2 bg-slate-950 hover:bg-red-500/20 border border-slate-800 hover:border-red-500/30 text-slate-300 hover:text-red-400 rounded-xl transition" title="مسح الكل"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+<button id="fullscreenBtn" class="p-2 bg-slate-950 hover:bg-indigo-500/20 border border-slate-800 hover:border-indigo-500/30 text-slate-300 hover:text-indigo-400 rounded-xl transition" title="ملء الشاشة (F)"><i data-lucide="maximize" class="w-4 h-4"></i></button>
+</div>
+</div>
+<div class="controls-panel-normal bg-slate-900 border border-slate-800/80 rounded-2xl p-3 flex flex-col gap-2 shadow-lg">
+<div class="flex items-center gap-3">
+<span id="currentTimeDisplay" class="text-xs font-mono text-slate-400 min-w-[42px] text-left cursor-pointer hover:text-indigo-400 transition select-none" title="انقر للتشغيل/الإيقاف">00:00</span>
+<input type="range" id="seekBar" min="0" value="0" step="0.1" class="flex-1 accent-indigo-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer" title="اسحب للتقديم · نقرة مزدوجة = تشغيل/إيقاف">
+<span id="durationDisplay" class="text-xs font-mono text-slate-400 min-w-[42px]">00:00</span>
+</div>
+<div class="flex items-center justify-between flex-wrap gap-2 pt-1">
+<div class="flex items-center gap-2">
+<button id="playPauseBtn" class="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition flex items-center justify-center shadow-md shadow-indigo-600/30" title="تشغيل/إيقاف (مسافة)"><i data-lucide="play" class="w-4 h-4"></i></button>
+<button id="skipBackwardBtn" class="p-2 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-800 transition" title="-5 ثواني"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+<button id="skipForwardBtn" class="p-2 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded-xl border border-slate-800 transition" title="+5 ثواني"><i data-lucide="rotate-cw" class="w-4 h-4"></i></button>
+<label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 hover:bg-slate-800/50 transition">
+<input type="checkbox" id="autoPauseToggle" checked class="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500/20 bg-slate-900 w-3.5 h-3.5">
+<span>إيقاف تلقائي عند الرسم</span>
+</label>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5 bg-slate-950 px-2 py-1.5 rounded-xl border border-slate-800">
+<button id="muteBtn" class="text-slate-400 hover:text-white p-0.5" title="كتم"><i data-lucide="volume-2" class="w-3.5 h-3.5"></i></button>
+<input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" class="w-14 accent-indigo-500 h-1 bg-slate-800 rounded-lg cursor-pointer">
+</div>
+<div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+<span class="text-[11px] text-slate-400 px-1.5">السرعة:</span>
+<button class="speed-btn text-xs px-2 py-1 rounded-lg text-slate-300 hover:bg-slate-800" data-speed="0.75">0.75x</button>
+<button class="speed-btn active text-xs px-2 py-1 rounded-lg text-indigo-400 bg-indigo-600/20" data-speed="1">1x</button>
+<button class="speed-btn text-xs px-2 py-1 rounded-lg text-slate-300 hover:bg-slate-800" data-speed="1.25">1.25x</button>
+<button class="speed-btn text-xs px-2 py-1 rounded-lg text-slate-300 hover:bg-slate-800" data-speed="1.5">1.5x</button>
+<button class="speed-btn text-xs px-2 py-1 rounded-lg text-slate-300 hover:bg-slate-800" data-speed="2">2x</button>
+</div>
+<button id="screenshotBtn" class="bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-200 text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5"><i data-lucide="camera" class="w-3.5 h-3.5 text-indigo-400"></i><span>لقطة شاشة</span></button>
+</div>
+</div>
+</div>
+</div>
+<div class="notes-sidebar lg:col-span-1 bg-slate-900 border border-slate-800/80 rounded-2xl p-4 flex flex-col h-[580px] lg:h-auto shadow-lg">
+<div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
+<div class="flex items-center gap-2"><i data-lucide="notebook" class="w-4 h-4 text-indigo-400"></i><h3 class="font-bold text-sm">ملاحظات الدرس</h3></div>
+<div class="flex items-center gap-2">
+<span id="noteCount" class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full font-mono">0</span>
+<button id="clearNotesBtn" class="text-slate-500 hover:text-red-400 p-1 rounded transition" title="حذف كل الملاحظات"><i data-lucide="trash" class="w-3.5 h-3.5"></i></button>
+</div>
+</div>
+<div class="flex flex-col gap-2 mb-4">
+<textarea id="noteInput" rows="3" placeholder="اكتب ملاحظة أو تفاصيل الشرح هنا..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500/80 transition resize-none"></textarea>
+<button id="addNoteBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-2.5 rounded-xl font-medium transition flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20"><i data-lucide="plus" class="w-4 h-4"></i><span>إضافة ملاحظة عند التوقيت الحالي</span></button>
+</div>
+<div id="notesList" class="flex-1 overflow-y-auto space-y-2 pr-1">
+<div id="emptyNotes" class="h-full flex flex-col items-center justify-center text-slate-500 text-center py-8">
+<i data-lucide="bookmark-plus" class="w-10 h-10 mb-2 stroke-1 text-slate-600"></i>
+<p class="text-xs">لا توجد ملاحظات محفوظة في هذا الدرس.</p>
+<p class="text-[11px] text-slate-600 mt-1">الملاحظات ستساعدك في الوصول السريع للتوقيتات المهمة.</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+<div id="ytModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+<div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="youtube" class="w-5 h-5 text-red-500"></i>تشغيل فيديو من YouTube</h3>
+<button onclick="closeYtModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+</div>
+<p class="text-xs text-slate-400 mb-4 leading-relaxed">أدخل رابط فيديو اليوتيوب الذي تريد مشاهدته والمذاكرة منه:</p>
+<input type="text" id="ytUrlInput" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 mb-4 focus:outline-none focus:border-indigo-500">
+<div class="flex justify-end gap-2">
+<button onclick="closeYtModal()" class="px-4 py-2 rounded-xl text-xs bg-slate-800 text-slate-300 hover:bg-slate-700">إلغاء</button>
+<button id="loadYtBtn" class="px-4 py-2 rounded-xl text-xs bg-indigo-600 text-white hover:bg-indigo-500">تحميل الفيديو</button>
+</div>
+</div>
+</div>
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-700 text-slate-100 text-xs px-4 py-2.5 rounded-xl shadow-xl z-[100] opacity-0 pointer-events-none transition-opacity duration-300 flex items-center gap-2">
+<i data-lucide="info" class="w-4 h-4 text-indigo-400"></i><span id="toastMsg">رسالة</span>
+</div>
+<footer class="border-t border-slate-800/80 bg-slate-900/60 py-4 px-6 text-center text-xs text-slate-400 mt-auto">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+<div class="flex items-center gap-2"><i data-lucide="code-2" class="w-4 h-4 text-indigo-400"></i><span>تم تطويره وتصميمه من قبل <strong class="text-slate-200">Abdelrahman Ashraf</strong> - طالب بكلية الهندسة جامعة عين شمس</span></div>
+<div class="flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4 text-indigo-400"></i><span>تواصل: </span><a href="mailto:abdelrahman.ashraf.resume@gmail.com" class="text-indigo-400 hover:text-indigo-300 hover:underline transition font-mono">abdelrahman.ashraf.resume@gmail.com</a></div>
+</div>
+</footer>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+const video=document.getElementById('videoPlayer');
+const ytPlayerContainer=document.getElementById('ytPlayerContainer');
+const canvas=document.getElementById('drawingCanvas');
+const ctx=canvas.getContext('2d');
+const placeholderUI=document.getElementById('placeholderUI');
+const mediaContainer=document.getElementById('mediaContainer');
+const fsToolbar=document.getElementById('fsToolbar');
+let ytPlayer=null,isYouTube=false,youtubeVideoUrl='',isFullscreen=false,fsToolbarTimeout=null;
+let currentTool='pen',linePattern='smooth',drawingColor='#ef4444',strokeWidth=4,globalOpacity=1;
+let isDrawing=false,drawingHistory=[],notes=[],isSeeking=false;
+const playPauseBtn=document.getElementById('playPauseBtn');
+const seekBar=document.getElementById('seekBar');
+const currentTimeDisplay=document.getElementById('currentTimeDisplay');
+const durationDisplay=document.getElementById('durationDisplay');
+const autoPauseToggle=document.getElementById('autoPauseToggle');
+const colorPicker=document.getElementById('colorPicker');
+const lineWidthInput=document.getElementById('lineWidth');
+const strokeVal=document.getElementById('strokeVal');
+const opacityInput=document.getElementById('opacityInput');
+const opacityVal=document.getElementById('opacityVal');
+const lineStyleSelect=document.getElementById('lineStyleSelect');
+const volumeSlider=document.getElementById('volumeSlider');
+const muteBtn=document.getElementById('muteBtn');
+lucide.createIcons();
+function showToast(msg,duration=2200){const toast=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;toast.style.opacity='1';clearTimeout(toast._t);toast._t=setTimeout(()=>{toast.style.opacity='0'},duration);lucide.createIcons()}
+function resizeCanvas(){const rect=canvas.getBoundingClientRect();if(rect.width&&rect.height){let imgData=null;if(canvas.width>0&&canvas.height>0){try{imgData=ctx.getImageData(0,0,canvas.width,canvas.height)}catch(e){}}canvas.width=rect.width;canvas.height=rect.height;if(imgData){try{ctx.putImageData(imgData,0,0)}catch(e){}}}}
+window.addEventListener('resize',resizeCanvas);setTimeout(resizeCanvas,150);
+let lastX=0,lastY=0;
+function startDrawing(e){if(autoPauseToggle.checked)pauseVideo();isDrawing=true;const pos=getPos(e);lastX=pos.x;lastY=pos.y;saveState();ctx.beginPath();ctx.moveTo(lastX,lastY)}
+function draw(e){if(!isDrawing)return;const pos=getPos(e);ctx.lineCap='round';ctx.lineJoin='round';if(currentTool==='eraser'){ctx.globalCompositeOperation='destination-out';ctx.lineWidth=strokeWidth*3;ctx.setLineDash([])}else{ctx.globalCompositeOperation='source-over';ctx.globalAlpha=(currentTool==='highlighter')?0.35:globalOpacity;ctx.strokeStyle=drawingColor;ctx.lineWidth=(currentTool==='highlighter')?strokeWidth*3.5:strokeWidth;ctx.setLineDash(linePattern==='dashed'?[strokeWidth*2,strokeWidth*2]:[])}if(linePattern==='smooth'&&currentTool!=='eraser'){const midX=(lastX+pos.x)/2,midY=(lastY+pos.y)/2;ctx.quadraticCurveTo(lastX,lastY,midX,midY)}else{ctx.lineTo(pos.x,pos.y)}ctx.stroke();lastX=pos.x;lastY=pos.y}
+function stopDrawing(){if(isDrawing){ctx.closePath();ctx.globalAlpha=1;isDrawing=false}}
+function getPos(e){const rect=canvas.getBoundingClientRect();const clientX=e.touches?e.touches[0].clientX:e.clientX;const clientY=e.touches?e.touches[0].clientY:e.clientY;return{x:clientX-rect.left,y:clientY-rect.top}}
+function saveState(){if(drawingHistory.length>25)drawingHistory.shift();try{drawingHistory.push(ctx.getImageData(0,0,canvas.width,canvas.height))}catch(e){}}
+function undo(){if(drawingHistory.length>0)ctx.putImageData(drawingHistory.pop(),0,0);else clearCanvas()}
+function clearCanvas(){ctx.clearRect(0,0,canvas.width,canvas.height);drawingHistory=[]}
+canvas.addEventListener('mousedown',startDrawing);canvas.addEventListener('mousemove',draw);canvas.addEventListener('mouseup',stopDrawing);canvas.addEventListener('mouseleave',stopDrawing);
+canvas.addEventListener('touchstart',e=>{e.preventDefault();startDrawing(e)},{passive:false});canvas.addEventListener('touchmove',e=>{e.preventDefault();draw(e)},{passive:false});canvas.addEventListener('touchend',stopDrawing);
+document.getElementById('toolPen').addEventListener('click',function(){setTool('pen',this)});
+document.getElementById('toolHighlighter').addEventListener('click',function(){setTool('highlighter',this)});
+document.getElementById('toolEraser').addEventListener('click',function(){setTool('eraser',this)});
+document.querySelectorAll('.fs-tool-btn').forEach(btn=>{btn.addEventListener('click',()=>setTool(btn.dataset.tool,btn))});
+function setTool(tool,element){currentTool=tool;document.querySelectorAll('.tool-btn').forEach(b=>{b.classList.remove('bg-indigo-600/20','text-indigo-400','active');b.classList.add('text-slate-400')});document.querySelectorAll('.fs-tool-btn').forEach(b=>{b.classList.remove('bg-indigo-600/20','text-indigo-400','active');b.classList.add('text-slate-400')});const idMap={pen:'toolPen',highlighter:'toolHighlighter',eraser:'toolEraser'};const normal=document.getElementById(idMap[tool]);if(normal){normal.classList.add('bg-indigo-600/20','text-indigo-400','active');normal.classList.remove('text-slate-400')}document.querySelectorAll('[data-tool="'+tool+'"]').forEach(b=>{b.classList.add('bg-indigo-600/20','text-indigo-400','active');b.classList.remove('text-slate-400')})}
+lineStyleSelect.addEventListener('change',e=>linePattern=e.target.value);
+colorPicker.addEventListener('input',e=>drawingColor=e.target.value);
+document.querySelectorAll('.color-preset').forEach(btn=>{btn.addEventListener('click',()=>{drawingColor=btn.dataset.color;colorPicker.value=drawingColor})});
+lineWidthInput.addEventListener('input',e=>{strokeWidth=parseInt(e.target.value);strokeVal.textContent=strokeWidth});
+opacityInput.addEventListener('input',e=>{globalOpacity=parseFloat(e.target.value);opacityVal.textContent=Math.round(globalOpacity*100)+'%'});
+document.getElementById('undoBtn').addEventListener('click',undo);
+document.getElementById('clearCanvasBtn').addEventListener('click',clearCanvas);
+document.getElementById('fsUndoBtn').addEventListener('click',undo);
+document.getElementById('fsClearBtn').addEventListener('click',clearCanvas);
+function toggleFullscreen(){if(!document.fullscreenElement&&!document.webkitFullscreenElement){const el=mediaContainer;if(el.requestFullscreen)el.requestFullscreen();else if(el.webkitRequestFullscreen)el.webkitRequestFullscreen()}else{if(document.exitFullscreen)document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}}
+document.getElementById('fullscreenBtn').addEventListener('click',toggleFullscreen);
+document.getElementById('exitFsBtn').addEventListener('click',toggleFullscreen);
+function onFullscreenChange(){isFullscreen=!!(document.fullscreenElement||document.webkitFullscreenElement);document.body.classList.toggle('is-fullscreen',isFullscreen);setTimeout(resizeCanvas,120);if(isFullscreen){showFsToolbarTemporarily();showToast('اضغط Esc للخروج من ملء الشاشة')}lucide.createIcons()}
+document.addEventListener('fullscreenchange',onFullscreenChange);document.addEventListener('webkitfullscreenchange',onFullscreenChange);
+function showFsToolbarTemporarily(){if(!isFullscreen)return;fsToolbar.classList.remove('hidden-fs');clearTimeout(fsToolbarTimeout);fsToolbarTimeout=setTimeout(()=>{if(isFullscreen&&!isDrawing)fsToolbar.classList.add('hidden-fs')},3500)}
+mediaContainer.addEventListener('mousemove',showFsToolbarTemporarily);mediaContainer.addEventListener('touchstart',showFsToolbarTemporarily);
+function togglePlay(){if(isYouTube&&ytPlayer){const state=ytPlayer.getPlayerState();if(state===YT.PlayerState.PLAYING)ytPlayer.pauseVideo();else ytPlayer.playVideo()}else if(video.src){if(video.paused)video.play();else video.pause()}}
+function pauseVideo(){if(isYouTube&&ytPlayer)ytPlayer.pauseVideo();else if(video.src)video.pause()}
+function isPlaying(){if(isYouTube&&ytPlayer)return ytPlayer.getPlayerState()===YT.PlayerState.PLAYING;return video.src&&!video.paused}
+playPauseBtn.addEventListener('click',togglePlay);document.getElementById('fsPlayBtn').addEventListener('click',togglePlay);currentTimeDisplay.addEventListener('click',togglePlay);
+video.addEventListener('play',()=>updatePlayBtn(true));video.addEventListener('pause',()=>updatePlayBtn(false));
+function updatePlayBtn(playing){const icon=playing?'pause':'play';playPauseBtn.innerHTML='<i data-lucide="'+icon+'" class="w-4 h-4"></i>';const fsBtn=document.getElementById('fsPlayBtn');if(fsBtn)fsBtn.innerHTML='<i data-lucide="'+icon+'" class="w-4 h-4"></i>';lucide.createIcons()}
+video.addEventListener('timeupdate',()=>{if(!isYouTube&&!isSeeking){const current=video.currentTime,duration=video.duration||0;seekBar.value=current;seekBar.max=duration;currentTimeDisplay.textContent=formatTime(current);durationDisplay.textContent=formatTime(duration)}});
+seekBar.addEventListener('mousedown',()=>{isSeeking=true});seekBar.addEventListener('touchstart',()=>{isSeeking=true});seekBar.addEventListener('mouseup',()=>{isSeeking=false});seekBar.addEventListener('touchend',()=>{isSeeking=false});
+seekBar.addEventListener('input',()=>{const time=parseFloat(seekBar.value);if(isYouTube&&ytPlayer)ytPlayer.seekTo(time,true);else video.currentTime=time;currentTimeDisplay.textContent=formatTime(time)});
+seekBar.addEventListener('dblclick',e=>{e.preventDefault();togglePlay()});
+document.getElementById('skipForwardBtn').addEventListener('click',()=>{if(isYouTube&&ytPlayer)ytPlayer.seekTo(ytPlayer.getCurrentTime()+5,true);else video.currentTime+=5});
+document.getElementById('skipBackwardBtn').addEventListener('click',()=>{if(isYouTube&&ytPlayer)ytPlayer.seekTo(Math.max(0,ytPlayer.getCurrentTime()-5),true);else video.currentTime=Math.max(0,video.currentTime-5)});
+document.querySelectorAll('.speed-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.speed-btn').forEach(b=>{b.classList.remove('bg-indigo-600/20','text-indigo-400','active');b.classList.add('text-slate-300')});btn.classList.add('bg-indigo-600/20','text-indigo-400','active');btn.classList.remove('text-slate-300');const speed=parseFloat(btn.dataset.speed);if(isYouTube&&ytPlayer)ytPlayer.setPlaybackRate(speed);else video.playbackRate=speed})});
+volumeSlider.addEventListener('input',()=>{const vol=parseFloat(volumeSlider.value);video.volume=vol;if(isYouTube&&ytPlayer&&ytPlayer.setVolume)ytPlayer.setVolume(vol*100);updateMuteIcon(vol===0)});
+muteBtn.addEventListener('click',()=>{if(video.volume>0||(ytPlayer&&ytPlayer.getVolume&&ytPlayer.getVolume()>0)){volumeSlider.dataset.prev=volumeSlider.value;volumeSlider.value=0;video.volume=0;if(ytPlayer&&ytPlayer.setVolume)ytPlayer.setVolume(0);updateMuteIcon(true)}else{const prev=parseFloat(volumeSlider.dataset.prev||'1');volumeSlider.value=prev;video.volume=prev;if(ytPlayer&&ytPlayer.setVolume)ytPlayer.setVolume(prev*100);updateMuteIcon(false)}});
+function updateMuteIcon(muted){muteBtn.innerHTML=muted?'<i data-lucide="volume-x" class="w-3.5 h-3.5"></i>':'<i data-lucide="volume-2" class="w-3.5 h-3.5"></i>';lucide.createIcons()}
+function openYtModal(){document.getElementById('ytModal').classList.remove('hidden')}
+function closeYtModal(){document.getElementById('ytModal').classList.add('hidden')}
+document.getElementById('ytModalBtn').addEventListener('click',openYtModal);
+document.getElementById('loadYtBtn').addEventListener('click',()=>{const input=document.getElementById('ytUrlInput').value.trim();const videoId=extractYtId(input);if(videoId){youtubeVideoUrl=input;loadYouTubeVideo(videoId);closeYtModal()}else showToast('يرجى التأكد من إدخال رابط يوتيوب صحيح')});
+document.getElementById('ytUrlInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('loadYtBtn').click()});
+function extractYtId(url){const regExp=/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;const match=url.match(regExp);return(match&&match[2].length===11)?match[2]:null}
+function disableCaptions(){try{if(ytPlayer&&ytPlayer.unloadModule)ytPlayer.unloadModule('captions')}catch(e){}}
+function loadYouTubeVideo(id){isYouTube=true;video.classList.add('hidden');ytPlayerContainer.classList.remove('hidden');placeholderUI.classList.add('hidden');if(ytPlayer){ytPlayer.loadVideoById(id);disableCaptions()}else{ytPlayer=new YT.Player('ytPlayer',{videoId:id,playerVars:{autoplay:1,controls:0,modestbranding:1,rel:0,cc_load_policy:0,iv_load_policy:3},events:{onReady:onYtReady,onStateChange:onYtStateChange}})}showToast('تم تحميل فيديو YouTube')}
+function onYtReady(event){disableCaptions();setInterval(()=>{if(isYouTube&&ytPlayer&&ytPlayer.getCurrentTime&&!isSeeking){try{const current=ytPlayer.getCurrentTime(),duration=ytPlayer.getDuration()||0;seekBar.value=current;seekBar.max=duration;currentTimeDisplay.textContent=formatTime(current);durationDisplay.textContent=formatTime(duration)}catch(e){}}},400);resizeCanvas();if(ytPlayer.setVolume)ytPlayer.setVolume(parseFloat(volumeSlider.value)*100)}
+function onYtStateChange(event){if(event.data===YT.PlayerState.PLAYING){updatePlayBtn(true);disableCaptions()}else if(event.data===YT.PlayerState.PAUSED||event.data===YT.PlayerState.ENDED)updatePlayBtn(false)}
+const noteInput=document.getElementById('noteInput');const notesList=document.getElementById('notesList');const emptyNotes=document.getElementById('emptyNotes');
+document.getElementById('addNoteBtn').addEventListener('click',()=>{const text=noteInput.value.trim();if(!text){showToast('اكتب الملاحظة أولاً');return}let time=0;if(isYouTube&&ytPlayer)time=ytPlayer.getCurrentTime();else time=video.currentTime||0;notes.push({id:Date.now(),time,formattedTime:formatTime(time),text});notes.sort((a,b)=>a.time-b.time);noteInput.value='';renderNotes();showToast('تمت إضافة الملاحظة')});
+noteInput.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();document.getElementById('addNoteBtn').click()}});
+document.getElementById('clearNotesBtn').addEventListener('click',()=>{if(notes.length===0)return;if(confirm('هل تريد حذف جميع الملاحظات؟')){notes=[];renderNotes();showToast('تم حذف جميع الملاحظات')}});
+function renderNotes(){document.getElementById('noteCount').textContent=notes.length;if(notes.length===0){emptyNotes.classList.remove('hidden');notesList.querySelectorAll('.note-item').forEach(el=>el.remove());return}emptyNotes.classList.add('hidden');notesList.querySelectorAll('.note-item').forEach(el=>el.remove());notes.forEach(note=>{const item=document.createElement('div');item.className='note-item bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-1 hover:border-indigo-500/40 transition group';item.innerHTML='<div class="flex items-center justify-between"><button onclick="jumpToTime('+note.time+')" class="text-xs font-mono bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-md hover:bg-indigo-600 hover:text-white transition flex items-center gap-1"><i data-lucide="play-circle" class="w-3 h-3"></i>'+note.formattedTime+'</button><button onclick="deleteNote('+note.id+')" class="text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></div><p class="text-xs text-slate-200 mt-1 leading-relaxed">'+escapeHtml(note.text)+'</p>';notesList.appendChild(item)});lucide.createIcons()}
+function jumpToTime(time){if(isYouTube&&ytPlayer)ytPlayer.seekTo(time,true);else video.currentTime=time;if(!isPlaying())togglePlay()}
+function deleteNote(id){notes=notes.filter(n=>n.id!==id);renderNotes()}
+document.getElementById('exportSessionBtn').addEventListener('click',()=>{const sessionData={version:'2.1',author:'Abdelrahman Ashraf',timestamp:new Date().toISOString(),isYouTube,youtubeUrl:youtubeVideoUrl,notes,canvasData:canvas.toDataURL('image/png')};const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(sessionData,null,2));const a=document.createElement('a');a.setAttribute('href',dataStr);a.setAttribute('download','study-session-'+Date.now()+'.json');document.body.appendChild(a);a.click();a.remove();showToast('تم تصدير الجلسة')});
+document.getElementById('importSessionInput').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(evt){try{const session=JSON.parse(evt.target.result);if(session.notes){notes=session.notes;notes.sort((a,b)=>a.time-b.time);renderNotes()}if(session.isYouTube&&session.youtubeUrl){const videoId=extractYtId(session.youtubeUrl);if(videoId){youtubeVideoUrl=session.youtubeUrl;loadYouTubeVideo(videoId)}}if(session.canvasData){const img=new Image();img.onload=function(){clearCanvas();ctx.drawImage(img,0,0,canvas.width,canvas.height)};img.src=session.canvasData}showToast('تمت استعادة الجلسة بنجاح')}catch(err){showToast('خطأ أثناء قراءة ملف الجلسة')}};reader.readAsText(file);e.target.value=''});
+document.getElementById('screenshotBtn').addEventListener('click',()=>{const tempCanvas=document.createElement('canvas');tempCanvas.width=canvas.width;tempCanvas.height=canvas.height;const tempCtx=tempCanvas.getContext('2d');tempCtx.fillStyle='#0f172a';tempCtx.fillRect(0,0,tempCanvas.width,tempCanvas.height);tempCtx.fillStyle='#64748b';tempCtx.font='14px Cairo, sans-serif';tempCtx.textAlign='center';tempCtx.fillText('لقطة من الرسم (يوتيوب محمي)',tempCanvas.width/2,tempCanvas.height/2);tempCtx.drawImage(canvas,0,0);const link=document.createElement('a');link.download='study-screenshot-'+Date.now()+'.png';link.href=tempCanvas.toDataURL('image/png');link.click();showToast('تم حفظ لقطة الشاشة')});
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;switch(e.key){case' ':e.preventDefault();togglePlay();break;case'f':case'F':e.preventDefault();toggleFullscreen();break;case'ArrowRight':e.preventDefault();if(isYouTube&&ytPlayer)ytPlayer.seekTo(ytPlayer.getCurrentTime()+5,true);else video.currentTime+=5;break;case'ArrowLeft':e.preventDefault();if(isYouTube&&ytPlayer)ytPlayer.seekTo(Math.max(0,ytPlayer.getCurrentTime()-5),true);else video.currentTime=Math.max(0,video.currentTime-5);break;case'z':case'Z':if(e.ctrlKey||e.metaKey){e.preventDefault();undo()}break;case'Escape':if(isFullscreen)toggleFullscreen();break;case'1':setTool('pen',document.getElementById('toolPen'));break;case'2':setTool('highlighter',document.getElementById('toolHighlighter'));break;case'3':setTool('eraser',document.getElementById('toolEraser'));break}});
+function formatTime(seconds){if(isNaN(seconds)||!isFinite(seconds))return'00:00';const mins=Math.floor(seconds/60),secs=Math.floor(seconds%60);return mins.toString().padStart(2,'0')+':'+secs.toString().padStart(2,'0')}
+function escapeHtml(text){return text.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+window.jumpToTime=jumpToTime;window.deleteNote=deleteNote;window.openYtModal=openYtModal;window.closeYtModal=closeYtModal;
+</script>
 </body>
 </html>
