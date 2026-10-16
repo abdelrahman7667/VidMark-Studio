@@ -34,4 +34,4 @@
 
 1. قم بعمل **Clone** للمستودع:
    ```bash
-   git clone [https://github.com/YourUsername/VidMark-Studio.git](https://github.com/YourUsername/VidMark-Studio.git)
+   git clone [https://github.com/abdelrahman7667/VidMark-Studio.git)
