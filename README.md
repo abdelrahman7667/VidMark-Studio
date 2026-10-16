@@ -28,10 +28,3 @@
 
 ---
 
-## 🚀 طريقة التشغيل (Quick Start)
-
-لا تتطلب الأداة أي خوادم خلفية (Backend) أو تثبيت حزم متقدمة، فهي تعمل مباشرة من المتصفح:
-
-1. قم بعمل **Clone** للمستودع:
-   ```bash
-   git clone [https://github.com/abdelrahman7667/VidMark-Studio.git)
